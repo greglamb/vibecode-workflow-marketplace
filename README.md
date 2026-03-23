@@ -1,5 +1,12 @@
 # vibecode-workflow-marketplace
 
+## Install
+
+```bash
+claude plugin marketplace add greglamb/vibecode-workflow-marketplace
+claude plugin install vibecode-workflow@vibecode-workflow-marketplace
+```
+
 ## Plugin: vibecode-workflow
 
 A project template for [Claude Code](https://docs.anthropic.com/en/docs/claude-code) that provides structured commands, skills, and documentation conventions out of the box.
