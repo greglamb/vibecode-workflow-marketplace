@@ -7,7 +7,7 @@ SYNC_BRANCH="upstream-sync"
 CRON=""
 REMOTE_NAME="upstream"
 MODE="inline"
-CALLER_REF="v2"
+CALLER_REF="v1"
 WORKFLOWS_REPO="greglamb/gha-workflows"
 REUSABLE_WORKFLOW=".github/workflows/sync-branch-to-remote.yml"
 DISABLE_WORKFLOWS="rename"
@@ -20,6 +20,11 @@ DRY_RUN=false
 UPDATE=false
 FORCE=false
 UPSTREAM_URL=""
+
+# Track explicit overrides for summary display
+_SET_MODE=false _SET_BRANCH=false _SET_SYNC_BRANCH=false _SET_CRON=false
+_SET_REMOTE_NAME=false _SET_WORKFLOWS_REPO=false _SET_CALLER_REF=false
+_SET_DISABLE_WF=false _SET_RENAME_DIR=false _SET_AUTO_PR=false _SET_PR_BASE=false
 
 usage() {
   cat <<EOF
@@ -192,17 +197,17 @@ download_reusable_workflow() {
 # Parse args
 while [[ $# -gt 0 ]]; do
   case "$1" in
-    -m|--mode)                MODE="$2"; shift 2 ;;
-    -b|--branch)              BRANCH="$2"; shift 2 ;;
-    -s|--sync-branch)         SYNC_BRANCH="$2"; shift 2 ;;
-    -c|--cron)                CRON="$2"; shift 2 ;;
-    -r|--remote-name)         REMOTE_NAME="$2"; shift 2 ;;
-    --workflows-repo)         WORKFLOWS_REPO="$2"; shift 2 ;;
-    --caller-ref)             CALLER_REF="$2"; shift 2 ;;
-    -d|--disable-workflows)   DISABLE_WORKFLOWS="$2"; shift 2 ;;
-    --rename-dir)             RENAME_DIR="$2"; shift 2 ;;
-    --auto-pr)                AUTO_PR=true; shift ;;
-    --pr-base)                PR_BASE="$2"; shift 2 ;;
+    -m|--mode)                MODE="$2"; _SET_MODE=true; shift 2 ;;
+    -b|--branch)              BRANCH="$2"; _SET_BRANCH=true; shift 2 ;;
+    -s|--sync-branch)         SYNC_BRANCH="$2"; _SET_SYNC_BRANCH=true; shift 2 ;;
+    -c|--cron)                CRON="$2"; _SET_CRON=true; shift 2 ;;
+    -r|--remote-name)         REMOTE_NAME="$2"; _SET_REMOTE_NAME=true; shift 2 ;;
+    --workflows-repo)         WORKFLOWS_REPO="$2"; _SET_WORKFLOWS_REPO=true; shift 2 ;;
+    --caller-ref)             CALLER_REF="$2"; _SET_CALLER_REF=true; shift 2 ;;
+    -d|--disable-workflows)   DISABLE_WORKFLOWS="$2"; _SET_DISABLE_WF=true; shift 2 ;;
+    --rename-dir)             RENAME_DIR="$2"; _SET_RENAME_DIR=true; shift 2 ;;
+    --auto-pr)                AUTO_PR=true; _SET_AUTO_PR=true; shift ;;
+    --pr-base)                PR_BASE="$2"; _SET_PR_BASE=true; shift 2 ;;
     --no-remote)              NO_REMOTE=true; shift ;;
     --no-workflow)            NO_WORKFLOW=true; shift ;;
     --dry-run)                DRY_RUN=true; shift ;;
@@ -317,23 +322,31 @@ if [[ "$NO_WORKFLOW" == false ]]; then
 fi
 
 # Summary
+# Helper: append "(default)" when not explicitly set
+_d() { [[ "$1" == false ]] && echo " (default)" || echo ""; }
+
 echo ""
 echo "✓ Setup complete!$( [[ "$DRY_RUN" == true ]] && echo " (dry-run — no files written)" )"
-echo "  Mode:         $MODE"
-echo "  Upstream:     $UPSTREAM_URL ($BRANCH)"
-echo "  Syncs to:     $SYNC_BRANCH"
+echo ""
+echo "  Mode:            $MODE$(_d "$_SET_MODE")"
+echo "  Upstream:        $UPSTREAM_URL"
+echo "  Branch:          $BRANCH$(_d "$_SET_BRANCH")"
+echo "  Sync branch:     $SYNC_BRANCH$(_d "$_SET_SYNC_BRANCH")"
 if [[ -n "$CRON" ]]; then
-  echo "  Schedule:     $CRON"
+  echo "  Schedule:        $CRON$(_d "$_SET_CRON")"
 else
-  echo "  Schedule:     manual only (workflow_dispatch)"
+  echo "  Schedule:        off — manual dispatch only$(_d "$_SET_CRON")"
 fi
-echo "  Workflows:    $WORKFLOWS_REPO@$CALLER_REF"
-echo "  Upstream WFs: $DISABLE_WORKFLOWS"
+echo "  Remote name:     $REMOTE_NAME$(_d "$_SET_REMOTE_NAME")"
+echo "  Workflows repo:  $WORKFLOWS_REPO@$CALLER_REF$( [[ "$_SET_WORKFLOWS_REPO" == false && "$_SET_CALLER_REF" == false ]] && echo " (default)" || echo "" )"
+echo "  Upstream WFs:    $DISABLE_WORKFLOWS$(_d "$_SET_DISABLE_WF")"
 if [[ "$DISABLE_WORKFLOWS" == "rename" ]]; then
-  echo "  Rename dir:   $RENAME_DIR"
+  echo "  Rename dir:      $RENAME_DIR$(_d "$_SET_RENAME_DIR")"
 fi
 if [[ "$AUTO_PR" == true ]]; then
-  echo "  Auto PR:      $SYNC_BRANCH → $PR_BASE"
+  echo "  Auto PR:         $SYNC_BRANCH → $PR_BASE$(_d "$_SET_PR_BASE")"
+else
+  echo "  Auto PR:         off$(_d "$_SET_AUTO_PR")"
 fi
 echo ""
 echo "  Run manually: gh workflow run sync-upstream.yml"
