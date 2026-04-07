@@ -98,13 +98,6 @@ generate_caller_workflow() {
 "
   fi
 
-  local permissions_block="    permissions:
-      contents: write"
-  if [[ "$AUTO_PR" == true ]]; then
-    permissions_block="${permissions_block}
-      pull-requests: write"
-  fi
-
   cat <<YAML
 name: Sync Upstream
 
@@ -137,6 +130,10 @@ on:
         required: false
         default: "${RENAME_DIR}"
 ${pr_inputs}  ${SCHEDULE_BLOCK}
+permissions:
+  contents: write
+  pull-requests: write
+
 jobs:
   call-sync:
     uses: ${uses_path}
@@ -146,7 +143,7 @@ jobs:
       target_ref: \${{ inputs.target_ref || '${SYNC_BRANCH}' }}
       disable_workflows: \${{ inputs.disable_workflows || '${DISABLE_WORKFLOWS}' }}
       rename_dir: \${{ inputs.rename_dir || '${RENAME_DIR}' }}
-${pr_with}${permissions_block}
+${pr_with}
 YAML
 }
 
