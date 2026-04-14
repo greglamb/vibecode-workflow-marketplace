@@ -5,7 +5,7 @@ Before continuing, do the following exactly once:
 
 1. Check if the project root is a git repository (look for `.git/`). If not, run `git init`.
 2. Create the .worktrees directory in the project root and add it to gitignore
-3. Create the _reference directory in the project root and add it to gitignore
+3. Create the _gitignored directory in the project root and add both `_gitignored` and `_reference` to gitignore (the `_reference` entry is kept for backwards compatibility with existing projects)
 4. Create the TODO.md file in the project root
 5. Create the CHANGELOG.md file in the project root
 6. Set up goodvibes-workflow using the goodvibes-workflow skill
