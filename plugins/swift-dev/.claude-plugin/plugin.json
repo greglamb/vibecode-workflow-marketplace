@@ -1,7 +1,7 @@
 {
   "name": "swift-dev",
   "description": "Comprehensive Swift/Apple development toolkit for Claude Code. Skills, agents, and hooks for iOS/macOS/watchOS/visionOS projects. Pairs with Axiom and Paul Hudson's Pro skills. Optionally enhanced by XcodeBuildMCP.",
-  "version": "0.2604.1405",
+  "version": "0.2604.1406",
   "author": {
     "name": "Greg Lamb",
     "url": "https://github.com/greglamb"

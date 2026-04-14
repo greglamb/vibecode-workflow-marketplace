@@ -85,22 +85,19 @@ These are the plugin's skills, available via the `/` menu:
 | Command | When to use it | Auto-invokes? |
 |---------|---------------|---------------|
 | `/swift-dev:init` | First time opening a Swift project with this plugin | Yes — triggers on "set up for swift", "initialize project" |
-| `/swift-dev:tdd <feature>` | Implementing a feature test-first | Yes — triggers on "implement with TDD", "test first" |
 | `/swift-dev:build-fix` | Build is broken, want autonomous fix loop | No — invoke explicitly |
 | `/swift-dev:verify-ui` | Made UI changes, want visual + accessibility verification | No — invoke explicitly |
 | `/swift-dev:health-check` | Pre-release or pre-PR full project audit | No — invoke explicitly |
-| `/swift-dev:review` | Ready to review changes before committing | No — invoke explicitly |
 | `/swift-dev:release` | Setting up macOS app signing, notarization, Homebrew cask, or release workflows | Yes — triggers on "ship macOS app", "notarize", "homebrew cask" |
+| `/swift-dev:update-claude-md` | Plugin shipped new managed sections and you want existing projects to pick them up | No — invoke explicitly |
+
+Code review is owned by `superpowers:requesting-code-review`; it can spawn the `swift-reviewer` subagent (shipped by this plugin) for Swift-specific checks.
 
 Skills marked "No" for auto-invocation use `disable-model-invocation: true` — Claude won't run them unless you explicitly ask.
 
 #### `/swift-dev:build-fix`
 
 Runs an autonomous loop: build → read structured errors → fix source → rebuild. Repeats until the build is green, then runs tests. Reports what was broken and what it fixed. Does not ask for confirmation between iterations.
-
-#### `/swift-dev:tdd <feature>`
-
-Strict Red-Green-Refactor using Swift Testing (`@Test`, `#expect`). Writes failing tests first, implements minimum code to pass, refactors, and verifies ≥75% coverage on new code. Pass a feature description as the argument.
 
 #### `/swift-dev:verify-ui`
 
@@ -115,13 +112,17 @@ Comprehensive audit across all layers:
 
 Reports issues grouped by severity (Critical / Warning / Info) with recommended fixes.
 
-#### `/swift-dev:review`
+#### `swift-reviewer` subagent
 
-Spawns the `swift-reviewer` subagent in a separate context window. The subagent has read-only tool access — it can read files and run `git diff` but cannot modify anything. It reviews against a prioritized checklist: correctness, concurrency safety, SwiftData rules, memory management, API deprecations, testability, and accessibility. Returns structured findings. If critical issues are found, the main agent offers to fix them.
+Read-only Swift code reviewer shipped as an agent (not a slash command). Reviews against a prioritized checklist: correctness, concurrency safety, SwiftData rules, memory management, API deprecations, testability, and accessibility. Invoke it via `superpowers:requesting-code-review` (which owns the review *workflow*), or directly with the Agent tool. Returns structured findings by severity.
 
 #### `/swift-dev:release`
 
 House playbook for shipping a Developer-ID-signed, notarized macOS SwiftUI app via GitHub Actions and a Homebrew cask in the same repo. Covers the two-workflow CI/release layout, signing + notarization + stapling, signed DMG creation, pinned cask SHAs, CI-driven cask bumps, required GitHub secrets, Info.plist requirements, and common failure modes with fixes. Use when setting up release automation, authoring a Homebrew cask, or diagnosing notarization issues.
+
+#### `/swift-dev:update-claude-md`
+
+Idempotent patcher for existing `CLAUDE.md` files. When the plugin ships new managed sections (e.g. added "skills to consult during brainstorming"), run this in each existing project to pull the updates without re-running init. Finds `<!-- swift-dev:managed:NAME -->` markers and replaces content between them with the latest canonical snippet from `${CLAUDE_PLUGIN_ROOT}/snippets/claude-md/NAME.md`. Appends missing sections at the end. Never touches unmanaged content (build commands, coding standards, custom sections).
 
 ## What's in the plugin
 
@@ -132,11 +133,14 @@ swift-dev/
 ├── skills/
 │   ├── init/SKILL.md                # Project scaffolding + dependency install
 │   ├── build-fix/SKILL.md           # Autonomous build-fix loop
-│   ├── tdd/SKILL.md                 # Test-driven development workflow
 │   ├── verify-ui/SKILL.md           # Screenshot + accessibility verification
 │   ├── health-check/SKILL.md        # Full project audit
 │   ├── release/SKILL.md             # macOS signing, notarization, Homebrew cask
-│   └── review/SKILL.md              # Delegates to swift-reviewer subagent
+│   └── update-claude-md/SKILL.md    # Patches managed sections in existing CLAUDE.md
+├── snippets/
+│   └── claude-md/                   # Canonical content for managed CLAUDE.md sections
+│       ├── suggest-skills.md
+│       └── consult-skills.md
 ├── agents/
 │   └── swift-reviewer.md            # Read-only code reviewer (separate context)
 ├── hooks/
@@ -197,13 +201,27 @@ If installed before or during init, the scaffolded `CLAUDE.md` will include `xco
 
 ## Handling skill conflicts
 
-Three layers of Swift guidance (rules, Hudson Pro, Axiom) will occasionally disagree — typically on style preferences or which iOS version's APIs to target, not on hard correctness issues. Claude Code has no built-in priority system for content conflicts across plugins.
+Layers of guidance (rules, Superpowers, swift-dev, Hudson Pro, Axiom) will occasionally disagree — typically on style preferences, process ordering, or which iOS version's APIs to target, not on hard correctness issues. Claude Code has no built-in priority system for content conflicts across plugins.
 
 The scaffolded `CLAUDE.md` includes an explicit priority chain:
 
 1. **`CLAUDE.md` and `.claude/rules/`** — project-specific, always wins
-2. **Hudson Pro skills** — targeted LLM mistake corrections
-3. **Axiom skills** — broad framework coverage
+2. **[Superpowers](https://github.com/obra/superpowers) skills** — workflow/process (brainstorming, plans, TDD, code review, debugging, worktrees, subagent-driven dev). Wins anywhere swift-dev overlaps on *process*.
+3. **swift-dev skills** — Swift-specific workflows (init, build-fix, verify-ui, health-check, release) and the `swift-reviewer` subagent invoked through `superpowers:requesting-code-review`. TDD workflow is owned by Superpowers; Swift Testing syntax is enforced via `.claude/rules/testing.md`.
+4. **Hudson Pro skills** — targeted LLM mistake corrections
+5. **Axiom skills** — broad framework coverage
+
+### Superpowers ↔ swift-dev overlap map
+
+| Concern | Owner | swift-dev adds |
+|---|---|---|
+| TDD / RED-GREEN-REFACTOR | `superpowers:test-driven-development` | Swift Testing syntax (`@Test`, `#expect`) enforced via `.claude/rules/testing.md` (no swift-dev command) |
+| Code review workflow | `superpowers:requesting-code-review`, `receiving-code-review` | `swift-reviewer` subagent (Swift-specific checklist) — invoked by superpowers, not a separate command |
+| Debugging | `superpowers:systematic-debugging` | Xcode structured-error build loop in `/swift-dev:build-fix` |
+| Planning, brainstorming, worktrees, subagent-driven dev, verification-before-completion, finishing a branch | Superpowers (no swift-dev equivalent) | — |
+| Project scaffolding, simulator screenshot + a11y verification, full project health audit, macOS signing/notarization/Homebrew cask | swift-dev (no Superpowers equivalent) | — |
+
+Rule of thumb: if it's a **process** question (how to plan, how to iterate, how to review, how to debug, when to cut a branch), defer to Superpowers. If it's a **Swift/Xcode/Apple-platform** question (which API, which build command, which lint rule, how to notarize), defer to swift-dev/Hudson Pro/Axiom in that order.
 
 Because `CLAUDE.md` loads every session and Claude attends more to later context, this priority declaration is effective. If a rule says "use NavigationStack" and Axiom suggests a NavigationSplitView pattern for your use case, Claude follows the rule. If you want Axiom's recommendation for a specific case, override it in `CLAUDE.md` or the relevant rule file.
 

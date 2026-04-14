@@ -132,6 +132,8 @@ If the project doesn't use SwiftData, skip `swiftdata.md` and note that you skip
 
 Write a `CLAUDE.md` at the project root using the detected project context. Keep it under 50 lines.
 
+**Managed sections.** Some sections are marked with `<!-- swift-dev:managed:NAME -->` … `<!-- /swift-dev:managed:NAME -->` markers. For these, read the referenced snippet file at `${CLAUDE_PLUGIN_ROOT}/snippets/claude-md/NAME.md` and insert its contents **verbatim** between the markers. These markers let `/swift-dev:update-claude-md` patch the sections in place when the plugin ships new versions — do not remove the markers.
+
 First, check if `xcodebuildmcp` is available (`which xcodebuildmcp`). Use the appropriate template:
 
 **If xcodebuildmcp IS available:**
@@ -161,13 +163,18 @@ Use `xcodebuildmcp` CLI for builds, tests, and simulator interaction. Discover c
 
 When skills or plugins give conflicting guidance, follow this order:
 1. This file and `.claude/rules/` — project-specific, always wins
-2. Hudson Pro skills — targeted LLM mistake corrections
-3. Axiom skills — broad framework coverage
+2. Superpowers skills — workflow/process (brainstorming, plans, TDD, code review, debugging, worktrees). Wins over swift-dev on any *process* overlap.
+3. swift-dev skills — Swift-specific workflows (build-fix, verify-ui, health-check, release) and Swift-specific checklists layered onto Superpowers workflows
+4. Hudson Pro skills — targeted LLM mistake corrections
+5. Axiom skills — broad framework coverage
+
+Overlap rule of thumb: **process** questions (how to plan/iterate/review/debug) → Superpowers; **Swift/Xcode/Apple-platform** questions (which API, build command, lint rule, notarization) → swift-dev → Hudson Pro → Axiom.
+
 If still ambiguous, prefer the approach that targets this project's minimum deployment target.
 
 ## Workflow
 
-1. Check if Axiom or a Hudson Pro skill covers the task
+1. For process (planning, TDD, review, debugging, worktrees) defer to Superpowers; for Swift/Xcode/Apple specifics check swift-dev, then Hudson Pro, then Axiom
 2. Write code following skill guidance
 3. Build — read errors, fix, rebuild
 4. Run tests — fix failures
@@ -176,6 +183,14 @@ If still ambiguous, prefer the approach that targets this project's minimum depl
 ## Git
 
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
+
+<!-- swift-dev:managed:suggest-skills -->
+{CONTENTS OF ${CLAUDE_PLUGIN_ROOT}/snippets/claude-md/suggest-skills.md, INSERTED VERBATIM}
+<!-- /swift-dev:managed:suggest-skills -->
+
+<!-- swift-dev:managed:consult-skills -->
+{CONTENTS OF ${CLAUDE_PLUGIN_ROOT}/snippets/claude-md/consult-skills.md, INSERTED VERBATIM}
+<!-- /swift-dev:managed:consult-skills -->
 
 @./docs/ARCHITECTURE.md
 ```
@@ -205,13 +220,18 @@ If still ambiguous, prefer the approach that targets this project's minimum depl
 
 When skills or plugins give conflicting guidance, follow this order:
 1. This file and `.claude/rules/` — project-specific, always wins
-2. Hudson Pro skills — targeted LLM mistake corrections
-3. Axiom skills — broad framework coverage
+2. Superpowers skills — workflow/process (brainstorming, plans, TDD, code review, debugging, worktrees). Wins over swift-dev on any *process* overlap.
+3. swift-dev skills — Swift-specific workflows (build-fix, verify-ui, health-check, release) and Swift-specific checklists layered onto Superpowers workflows
+4. Hudson Pro skills — targeted LLM mistake corrections
+5. Axiom skills — broad framework coverage
+
+Overlap rule of thumb: **process** questions (how to plan/iterate/review/debug) → Superpowers; **Swift/Xcode/Apple-platform** questions (which API, build command, lint rule, notarization) → swift-dev → Hudson Pro → Axiom.
+
 If still ambiguous, prefer the approach that targets this project's minimum deployment target.
 
 ## Workflow
 
-1. Check if Axiom or a Hudson Pro skill covers the task
+1. For process (planning, TDD, review, debugging, worktrees) defer to Superpowers; for Swift/Xcode/Apple specifics check swift-dev, then Hudson Pro, then Axiom
 2. Write code following skill guidance
 3. Build — read errors, fix, rebuild
 4. Run tests — fix failures
@@ -220,6 +240,14 @@ If still ambiguous, prefer the approach that targets this project's minimum depl
 ## Git
 
 - Conventional commits: `feat:`, `fix:`, `refactor:`, `test:`, `docs:`, `chore:`
+
+<!-- swift-dev:managed:suggest-skills -->
+{CONTENTS OF ${CLAUDE_PLUGIN_ROOT}/snippets/claude-md/suggest-skills.md, INSERTED VERBATIM}
+<!-- /swift-dev:managed:suggest-skills -->
+
+<!-- swift-dev:managed:consult-skills -->
+{CONTENTS OF ${CLAUDE_PLUGIN_ROOT}/snippets/claude-md/consult-skills.md, INSERTED VERBATIM}
+<!-- /swift-dev:managed:consult-skills -->
 
 @./docs/ARCHITECTURE.md
 ```
@@ -240,7 +268,8 @@ Append `CLAUDE.local.md` to `.gitignore` if it's not already there.
 
 Summarize what was created, what was skipped (and why), and what external tools were installed. List the slash commands now available:
 - `/swift-dev:build-fix`
-- `/swift-dev:tdd`
 - `/swift-dev:verify-ui`
 - `/swift-dev:health-check`
-- `/swift-dev:review`
+- `/swift-dev:release`
+
+For TDD workflow, use `superpowers:test-driven-development` — the Swift Testing specifics (`@Test`, `#expect`) are enforced via `.claude/rules/testing.md`. For code review, use `superpowers:requesting-code-review` which can spawn the `swift-reviewer` subagent shipped by this plugin.
