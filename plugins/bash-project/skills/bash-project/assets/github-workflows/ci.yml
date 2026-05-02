@@ -1,0 +1,57 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        # macos-latest still ships the system /bin/bash 3.2.57 — that's the
+        # whole point of running on it. ubuntu-latest covers modern bash.
+        os: [ubuntu-latest, macos-latest]
+    runs-on: ${{ matrix.os }}
+
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Install shellcheck (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y shellcheck
+
+      - name: Install shellcheck + shfmt + bats (macOS)
+        if: runner.os == 'macOS'
+        run: brew install shellcheck shfmt bats-core
+
+      - name: Install shfmt (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          curl -sSL -o /tmp/shfmt https://github.com/mvdan/sh/releases/latest/download/shfmt_v3.8.0_linux_amd64
+          chmod +x /tmp/shfmt
+          sudo mv /tmp/shfmt /usr/local/bin/shfmt
+
+      - name: Install bats (Linux)
+        if: runner.os == 'Linux'
+        run: sudo apt-get install -y bats
+
+      - name: Confirm Bash version
+        run: bash --version
+
+      - name: Lint
+        run: make lint
+
+      - name: Format check
+        run: make fmt-check
+
+      - name: Test
+        # On macOS, force the system Bash 3.2 to run the tests so we
+        # actually catch portability regressions.
+        run: |
+          if [ "${{ runner.os }}" = "macOS" ]; then
+            /bin/bash -c 'make test'
+          else
+            make test
+          fi

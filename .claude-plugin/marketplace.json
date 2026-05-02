@@ -6,7 +6,7 @@
   },
   "metadata": {
     "description": "Collection of tools used in my AI assisted workflow",
-    "version": "0.2604.2303"
+    "version": "0.2605.101"
   },
   "plugins": [
     {
@@ -15,6 +15,10 @@
         "source": "github",
         "repo": "greglamb/goodvibes"
       }
+    },
+    {
+      "name": "bash-project",
+      "source": "./plugins/bash-project"
     },
     {
       "name": "goodvibes-equanimity",

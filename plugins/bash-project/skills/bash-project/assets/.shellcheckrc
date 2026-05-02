@@ -1,0 +1,13 @@
+# .shellcheckrc — project-level shellcheck config.
+# Bash 3.2.57 baseline; treat extension-less files in bin/ as bash.
+
+shell=bash
+
+# Disable noisy or actively-misleading checks for this style of project.
+# SC1090: Can't follow non-constant source. We use validated dynamic sourcing.
+# SC1091: Not following: file not found in mock. CI handles this correctly.
+disable=SC1090,SC1091
+
+# Opt-in to a couple of useful optional checks. Skip `require-variable-braces`
+# (SC2250) and `quote-safe-variables` (SC2248) — both are style-only and noisy.
+enable=deprecate-which

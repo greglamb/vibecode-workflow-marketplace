@@ -1,0 +1,12 @@
+{
+  "name": "bash-project",
+  "description": "Build maintainable bash projects",
+  "version": "0.2605.101",
+  "author": {
+    "name": "Greg Lamb",
+    "email": "email@greglamb.dev"
+  },
+  "homepage": "https://github.com/greglamb/claude-gcode-tools",
+  "repository": "https://github.com/greglamb/claude-gcode-tools",
+  "license": "MIT"
+}

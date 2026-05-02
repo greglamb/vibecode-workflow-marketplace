@@ -1,0 +1,56 @@
+#!/usr/bin/env bash
+# bin/mytool — example entry point for a portable Bash project.
+# Bash 3.2.57+ compatible. Do not introduce Bash 4+ features.
+
+set -euo pipefail
+IFS=$'\n\t'
+
+SCRIPT_DIR="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
+PROJECT_ROOT="$(cd "${SCRIPT_DIR}/.." && pwd)"
+LIB_DIR="${PROJECT_ROOT}/lib"
+
+# shellcheck source=../lib/_bootstrap.sh
+. "${LIB_DIR}/_bootstrap.sh"
+
+# Load the modules this command needs. log + platform are auto-loaded by
+# the bootstrap; list anything else here.
+bootstrap::load   # add module names: e.g., bootstrap::load http config
+
+mytool::usage() {
+  cat <<'USAGE'
+Usage: mytool <command> [options]
+
+Commands:
+  hello [name]     Print a friendly greeting.
+  version          Print the tool version.
+  help             Show this help.
+USAGE
+}
+
+mytool::cmd_hello() {
+  local name="${1:-world}"
+  log::info "saying hello to ${name}"
+  printf 'Hello, %s!\n' "$name"
+}
+
+mytool::cmd_version() {
+  printf 'mytool 0.1.0 (bash %s on %s)\n' \
+    "$BASH_VERSION" "$(platform::os)"
+}
+
+mytool::main() {
+  if [ "$#" -eq 0 ]; then
+    mytool::usage
+    exit 0
+  fi
+
+  local cmd="$1"; shift
+  case "$cmd" in
+    hello)   mytool::cmd_hello "$@" ;;
+    version) mytool::cmd_version "$@" ;;
+    help|-h|--help) mytool::usage ;;
+    *) log::error "unknown command: $cmd"; mytool::usage; exit 2 ;;
+  esac
+}
+
+mytool::main "$@"
